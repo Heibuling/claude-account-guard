@@ -52,3 +52,26 @@ jobs:
             echo "::error::scripts/ must not import network libraries"
             exit 1
           fi
+
+  action-selftest:
+    name: composite action self-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run the action against this repository
+        id: guard
+        uses: ./
+        with:
+          report-dir: .account-guard
+          fail-on: critical
+          artifact-name: claude-account-guard-report
+
+      - name: Verify action outputs and artifacts
+        shell: bash
+        run: |
+          echo "critical=${{ steps.guard.outputs.critical }}"
+          echo "high=${{ steps.guard.outputs.high }}"
+          test -f "${{ steps.guard.outputs.report-md }}"
+          test -f "${{ steps.guard.outputs.report-json }}"

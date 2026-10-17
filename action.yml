@@ -1,0 +1,111 @@
+name: Claude Account Guard
+description: >-
+  Read-only audit for leaked API keys, non-official base_url endpoints, and
+  multi-account traces, plus a 0-100 risk score. No network, no telemetry, no
+  third-party dependencies. Fails the build at a severity you choose.
+author: claude-account-guard contributors
+branding:
+  icon: shield
+  color: purple
+
+inputs:
+  path:
+    description: Directory to scan, relative to the workspace.
+    required: false
+    default: .
+  report-dir:
+    description: Where report.md and report.json are written.
+    required: false
+    default: .account-guard
+  fail-on:
+    description: Fail the step when a finding at this severity exists (none|critical|high|medium|info).
+    required: false
+    default: critical
+  check-history:
+    description: Scan git history for leaked credentials ("true" or "false").
+    required: false
+    default: "true"
+  history-fail-on:
+    description: Fail the history scan at this severity (none|critical|high).
+    required: false
+    default: high
+  python-version:
+    description: Python version used to run the scripts.
+    required: false
+    default: "3.x"
+  artifact-name:
+    description: Upload the report as this artifact name. Empty means no upload.
+    required: false
+    default: ""
+
+outputs:
+  report-md:
+    description: Path to the generated report.md.
+    value: ${{ steps.audit.outputs.report-md }}
+  report-json:
+    description: Path to the generated report.json.
+    value: ${{ steps.audit.outputs.report-json }}
+  critical:
+    description: Number of critical findings.
+    value: ${{ steps.audit.outputs.critical }}
+  high:
+    description: Number of high findings.
+    value: ${{ steps.audit.outputs.high }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Audit (read-only)
+      id: audit
+      shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_REPORT_DIR: ${{ inputs.report-dir }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        set -uo pipefail
+        OUT=$(python "$ACTION_PATH/scripts/audit.py" \
+          --path "$INPUT_PATH" \
+          --report-dir "$INPUT_REPORT_DIR" \
+          --fail-on "$INPUT_FAIL_ON" \
+          --no-color --quiet)
+        CODE=$?
+        echo "$OUT"
+        CRIT=$(printf '%s\n' "$OUT" | sed -n 's/.*critical=\([0-9][0-9]*\).*/\1/p')
+        HIGH=$(printf '%s\n' "$OUT" | sed -n 's/.*high=\([0-9][0-9]*\).*/\1/p')
+        {
+          echo "critical=${CRIT:-0}"
+          echo "high=${HIGH:-0}"
+          echo "report-md=$INPUT_REPORT_DIR/report.md"
+          echo "report-json=$INPUT_REPORT_DIR/report.json"
+        } >> "$GITHUB_OUTPUT"
+        if [ "$CODE" -ne 0 ]; then
+          echo "::error title=claude-account-guard::Findings at or above '$INPUT_FAIL_ON'."
+          exit "$CODE"
+        fi
+
+    - name: Scan git history for leaked credentials
+      if: ${{ inputs.check-history == 'true' }}
+      shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_HISTORY_FAIL_ON: ${{ inputs.history-fail-on }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        python "$ACTION_PATH/scripts/check_history.py" \
+          --path "$INPUT_PATH" \
+          --fail-on "$INPUT_HISTORY_FAIL_ON"
+
+    - name: Upload report
+      if: ${{ inputs.artifact-name != '' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.report-dir }}
+        if-no-files-found: warn

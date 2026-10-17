@@ -107,6 +107,36 @@ cp -r claude-account-guard .claude/skills/claude-account-guard
 
 之后当你提到"账号会不会被封""能不能共用账号""base_url 填的是某中转""Key 好像泄露了""账号被封怎么申诉"时，Skill 会被自动加载。
 
+### 作为 GitHub Action 使用
+
+根目录的 `action.yml` 是 composite action，可以直接在别人的 workflow 里引用（只读、不联网、无第三方依赖）：
+
+```yaml
+name: account-guard
+on: [push, pull_request]
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # 浅克隆拿不到历史，check-history 会退化成"无法扫描"
+      - id: guard
+        uses: Heibuling/claude-account-guard@v0.2.0
+        with:
+          path: .
+          report-dir: .account-guard
+          fail-on: critical       # none / critical / high / medium / info
+          check-history: 'true'
+          history-fail-on: high
+          artifact-name: account-guard-report   # 留空则不上传
+      - name: 打印结果
+        run: echo "critical=${{ steps.guard.outputs.critical }} high=${{ steps.guard.outputs.high }}"
+```
+
+输出：`steps.guard.outputs.critical` / `.high` / `.report-md` / `.report-json`。
+
 ## 评分卡示例
 
 ```console
@@ -141,6 +171,7 @@ API Key 卫生              15     0.0/5     0.0
 ```
 claude-account-guard/
 ├── SKILL.md                      # Agent Skill 入口（渐进式披露，< 500 行）
+├── action.yml                    # Composite GitHub Action（审计 + 门禁 + artifact）
 ├── README.md                     # 中文主版本（本文件）
 ├── README.en.md                  # 英文版
 ├── LICENSE                       # MIT
@@ -230,7 +261,7 @@ claude-account-guard/
 欢迎贡献，尤其是：条款变更、官方文档链接失效、申诉模板措辞改进、跨平台兼容性问题。
 
 ```bash
-python -m pytest -q          # 37 项测试
+python -m pytest -q          # 38 项测试
 ruff check .                 # 规则集在 pyproject.toml 里固定
 python scripts/audit.py --path . --no-history   # 自检
 ```

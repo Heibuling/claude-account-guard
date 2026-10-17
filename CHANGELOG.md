@@ -11,6 +11,21 @@
 - `check_history.py`：支持 `--staged` 模式，在提交前扫描暂存区。
 - `redact.py`：增加组织名与合同号的脱敏规则。
 
+## 0.2.0 — 2026-10-17
+
+### Added
+
+- **Composite GitHub Action**（根目录 `action.yml`）：`uses: Heibuling/claude-account-guard@v0.2.0` 一条 step 完成审计 → 历史密钥扫描 → 门禁 → 可选 artifact 上传；输出 `critical` / `high` / `report-md` / `report-json`，`fail-on` 与 `history-fail-on` 可分别设置。
+- **英文 README**（`README.en.md`）：按"团队合规基线"重写，含六层模型、评分卡、脚本保证、合规红线、FAQ 与免责声明；中英文互相链接。
+- `audit.py`：`run_audit(..., exclude_dirs=...)`，CLI 的 `--report-dir` 会被整体排除，避免在 CI 里二次运行时扫描到自己的报告。
+- 测试：报告目录排除（37 → 38 项）。
+
+### Changed
+
+- CI 增加 `action-selftest` job：用 `uses: ./` 跑自己的 action，并校验输出与报告文件确实生成。
+- 三个脚本的 `VERSION` 提升到 `0.2.0`。
+- 仓库描述改为中英双语，便于英文检索。
+
 ## 0.1.1 — 2026-10-17
 
 只修 CI 与 Windows 控制台编码，Skill 内容与 0.1.0 一致。

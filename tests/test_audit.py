@@ -507,3 +507,18 @@ def test_official_and_cloud_host_classification():
     assert audit.classify_host("127.0.0.1") == "local"
     assert audit.classify_host("relay.example.com") == "third_party"
     assert audit.url_host("HTTPS://API.Anthropic.COM/v1/messages") == "api.anthropic.com"
+
+
+def test_audit_skips_report_directory():
+    """GitHub Action 场景：报告目录在仓库内，再次运行不能把自己的报告当源码扫。"""
+    key = fake_key(seed=29)
+    with temp_workspace() as root:
+        reports = root / ".account-guard"
+        write(reports / "report.md", 'ANTHROPIC_API_KEY = "{}"\n'.format(key))
+
+        skipped = audit.run_audit(root, include_history=False, exclude_dirs=[reports])
+        assert "AG-012" not in ids(skipped), "报告目录应当被整体排除"
+        assert skipped.files_scanned == 0
+
+        rescanned = audit.run_audit(root, include_history=False)
+        assert "AG-012" in ids(rescanned), "不排除时应当命中（证明上面不是因为没扫到）"

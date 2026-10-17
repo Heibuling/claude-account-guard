@@ -35,7 +35,7 @@ import sys
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 MAX_DIFF_BYTES = 64 * 1024 * 1024
 DEFAULT_MAX_COMMITS = 500
 

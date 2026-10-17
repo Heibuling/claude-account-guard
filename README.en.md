@@ -142,6 +142,36 @@ cp -r claude-account-guard .claude/skills/claude-account-guard     # per-project
 The skill activates when a session mentions a suspension, sharing an account or key, a
 relay `base_url`, a suspected leak, or an appeal.
 
+### Use as a GitHub Action
+
+The root `action.yml` is a composite action — read-only, no network, no dependencies:
+
+```yaml
+name: account-guard
+on: [push, pull_request]
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # a shallow clone has no history to scan
+      - id: guard
+        uses: Heibuling/claude-account-guard@v0.2.0
+        with:
+          path: .
+          report-dir: .account-guard
+          fail-on: critical       # none / critical / high / medium / info
+          check-history: 'true'
+          history-fail-on: high
+          artifact-name: account-guard-report   # leave empty to skip upload
+      - run: echo "critical=${{ steps.guard.outputs.critical }} high=${{ steps.guard.outputs.high }}"
+```
+
+Outputs: `steps.guard.outputs.critical` / `.high` / `.report-md` / `.report-json`. The report
+directory is excluded from the scan, so re-running on the same workspace is clean.
+
 ## Risk scorecard
 
 Six weighted dimensions, 25 binary items, `1` = risk present, `0` = eliminated,
@@ -190,6 +220,7 @@ The scoring is a heuristic self-check. It has no relationship to any internal ri
 ```
 claude-account-guard/
 ├── SKILL.md                      # Agent Skill entry point (<500 lines, progressive disclosure)
+├── action.yml                    # composite GitHub Action (audit + gate + artifact)
 ├── README.md                     # Chinese README (primary)
 ├── README.en.md                  # this file
 ├── LICENSE  CHANGELOG.md  .gitignore  pyproject.toml
@@ -197,7 +228,7 @@ claude-account-guard/
 ├── references/                   # knowledge base, loaded on demand (Chinese)
 ├── scripts/                      # three read-only, stdlib-only scripts
 ├── assets/scorecard-template.md  # printable 25-item checklist
-└── tests/                        # 37 tests + fixtures
+└── tests/                        # 38 tests + fixtures
 ```
 
 ### Knowledge base
@@ -304,7 +335,7 @@ Especially welcome: terms-of-service changes, dead official links, appeal wordin
 cross-platform issues.
 
 ```bash
-python -m pytest -q          # 37 tests
+python -m pytest -q          # 38 tests
 ruff check .                 # rule set pinned in pyproject.toml
 python scripts/audit.py --path . --no-history
 ```

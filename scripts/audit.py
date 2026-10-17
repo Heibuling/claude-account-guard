@@ -42,7 +42,7 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 import check_history  # noqa: E402
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 
 DISCLAIMER = (
     "本报告是启发式自查工具的结果，不是平台风控结论，也不能保证账号不被限制或封禁。"
@@ -232,13 +232,28 @@ def is_probably_text(path: Path) -> bool:
 
 
 def iter_scan_files(
-    root: Path, max_files: int = MAX_FILES
+    root: Path, max_files: int = MAX_FILES, exclude: Sequence[Path] = ()
 ) -> Tuple[List[Path], List[str], bool]:
-    """广度优先遍历，返回 (文件列表, 跳过说明, 是否被截断)。"""
+    """广度优先遍历，返回 (文件列表, 跳过说明, 是否被截断)。
+
+    ``exclude`` 里的目录（例如本工具自己的报告目录）会被整体跳过。
+    """
     files: List[Path] = []
     skipped: List[str] = []
     truncated = False
+    excluded = set()
+    for path in exclude:
+        try:
+            excluded.add(str(Path(path).resolve()))
+        except OSError:
+            continue
     for current, dirnames, filenames in os.walk(root, followlinks=False):
+        try:
+            if str(Path(current).resolve()) in excluded:
+                dirnames[:] = []
+                continue
+        except OSError:
+            pass
         dirnames[:] = sorted(
             d for d in dirnames if d not in SKIP_DIRS and not d.startswith(".git")
         )
@@ -1271,9 +1286,12 @@ def run_audit(
     declared_region: str = "",
     include_history: bool = True,
     max_files: int = MAX_FILES,
+    exclude_dirs: Sequence[Path] = (),
 ) -> AuditReport:
     rules = IgnoreRules(root)
-    files, skipped, truncated = iter_scan_files(root, max_files=max_files)
+    files, skipped, truncated = iter_scan_files(
+        root, max_files=max_files, exclude=exclude_dirs
+    )
     if truncated:
         skipped.append("文件数超过上限 {}，只扫描了前 {} 个".format(max_files, max_files))
 
@@ -1385,19 +1403,25 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print("目录不存在: {}".format(root), file=sys.stderr)
         return 2
 
-    report = run_audit(
-        root,
-        declared_region=args.declared_region,
-        include_history=not args.no_history,
-        max_files=max(1, args.max_files),
-    )
-
     report_dir = Path(args.report_dir).expanduser().resolve()
     try:
         report_dir.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
         print("无法创建报告目录: {}".format(exc), file=sys.stderr)
         return 2
+
+    # 只排除"扫描根目录内部"的报告目录；两者相同（--report-dir .）时不能排除整个仓库
+    exclude: List[Path] = []
+    if report_dir != root and root in report_dir.parents:
+        exclude.append(report_dir)
+
+    report = run_audit(
+        root,
+        declared_region=args.declared_region,
+        include_history=not args.no_history,
+        max_files=max(1, args.max_files),
+        exclude_dirs=exclude,
+    )
 
     if not args.no_md:
         (report_dir / "report.md").write_text(render_markdown(report), encoding="utf-8")
