@@ -4,6 +4,8 @@
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 [![No network](https://img.shields.io/badge/network-none-lightgrey.svg)](#安全性)
 
+**中文** · [English](README.en.md) — 你正在读中文版。
+
 **一个合规导向的 Claude Agent Skill：帮你在封禁发生前消除"可归因于自身配置"的风险，在疑似误封时做出可核验的申诉。**
 
 > **它不是反封禁外挂。** 它不提供任何绕过服务地区限制、伪造支付/身份、账号买卖或对抗风控的方法。项目的全部价值建立在"遵守平台条款"这个前提上——因为违反条款本身，就是被封禁的首要原因。
@@ -139,7 +141,8 @@ API Key 卫生              15     0.0/5     0.0
 ```
 claude-account-guard/
 ├── SKILL.md                      # Agent Skill 入口（渐进式披露，< 500 行）
-├── README.md
+├── README.md                     # 中文主版本（本文件）
+├── README.en.md                  # 英文版
 ├── LICENSE                       # MIT
 ├── CHANGELOG.md
 ├── .gitignore
