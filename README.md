@@ -143,6 +143,7 @@ claude-account-guard/
 ├── LICENSE                       # MIT
 ├── CHANGELOG.md
 ├── .gitignore
+├── pyproject.toml                # ruff / pytest 配置（显式固定规则集）
 ├── .github/workflows/ci.yml      # pytest + ruff，三平台
 ├── references/                   # 知识库（按需加载）
 ├── scripts/                      # 三个只读脚本（纯标准库）
@@ -227,7 +228,7 @@ claude-account-guard/
 
 ```bash
 python -m pytest -q          # 36 项测试
-ruff check --line-length 120 scripts tests
+ruff check .                 # 规则集在 pyproject.toml 里固定
 python scripts/audit.py --path . --no-history   # 自检
 ```
 
