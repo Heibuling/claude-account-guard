@@ -393,7 +393,20 @@ def render_text(result: Dict[str, object]) -> str:
     return "\n".join(lines)
 
 
+def _ensure_utf8_streams() -> None:
+    """把 stdout/stderr 切到 UTF-8：Windows 控制台默认 cp936/cp1252，直接 print 中文会崩。"""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            continue
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
+    _ensure_utf8_streams()
     parser = argparse.ArgumentParser(
         prog="check_history.py",
         description="扫描 git 历史中的疑似密钥痕迹（只读、离线、不打印原文）。",

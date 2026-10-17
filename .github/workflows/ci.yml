@@ -14,6 +14,9 @@ jobs:
     name: py${{ matrix.python }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    env:
+      # Windows runner 默认 cp1252，脚本输出中文时需要 UTF-8
+      PYTHONIOENCODING: utf-8
     strategy:
       fail-fast: false
       matrix:

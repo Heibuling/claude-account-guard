@@ -31,7 +31,7 @@
 - `scripts/check_history.py`：扫描 git 历史新增行与提交信息中的密钥痕迹，输出脱敏结果，无 git 时优雅降级。
 - `scripts/redact.py`：分享前脱敏（Key / Bearer / JWT / 私钥块 / Cookie / URL token / 邮箱 / 手机号 / 公网 IP / 用户名路径），幂等、支持 `--check` 门禁。
 - `assets/scorecard-template.md`：可打印的 25 项自查表与计算区。
-- `tests/`：36 项测试，覆盖密钥正则命中与不误报、脱敏函数、评分卡边界值（0/20/21/45/46/70/71/100）、三种目录场景、`--fail-on` 退出码、以及"报告绝不泄漏密钥原文"。
+- `tests/`：37 项测试，覆盖密钥正则命中与不误报、脱敏函数、评分卡边界值（0/20/21/45/46/70/71/100）、三种目录场景、`--fail-on` 退出码、Windows 非 UTF-8 控制台的回归、以及"报告绝不泄漏密钥原文"。
 - `.github/workflows/ci.yml`：Ubuntu / macOS / Windows × Python 3.9 / 3.12，跑 pytest、ruff、自检与历史扫描。
 
 ### Notes

@@ -227,7 +227,7 @@ claude-account-guard/
 欢迎贡献，尤其是：条款变更、官方文档链接失效、申诉模板措辞改进、跨平台兼容性问题。
 
 ```bash
-python -m pytest -q          # 36 项测试
+python -m pytest -q          # 37 项测试
 ruff check .                 # 规则集在 pyproject.toml 里固定
 python scripts/audit.py --path . --no-history   # 自检
 ```

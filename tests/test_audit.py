@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import random
@@ -359,6 +360,22 @@ def test_scan_git_history_without_repo_is_graceful():
         if not result["available"]:
             assert result["reason"]
         assert result["hits"] == []
+
+
+def test_check_history_survives_non_utf8_stdout():
+    """回归：Windows runner 控制台默认 cp1252，打印中文曾抛 UnicodeEncodeError。"""
+    with temp_workspace() as root:
+        buffer = io.BytesIO()
+        fake_stdout = io.TextIOWrapper(buffer, encoding="cp1252", errors="strict")
+        previous = sys.stdout
+        sys.stdout = fake_stdout
+        try:
+            code = check_history.main(["--path", str(root)])
+        finally:
+            sys.stdout = previous
+            fake_stdout.detach()
+        assert code == 0
+        assert "check_history" in buffer.getvalue().decode("utf-8")
 
 
 # ---------------------------------------------------------------------------
