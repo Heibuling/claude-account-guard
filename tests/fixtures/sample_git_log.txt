@@ -1,0 +1,17 @@
+diff --git a/app.py b/app.py
+index 0000000..1111111 100644
+--- a/app.py
++++ b/app.py
+@@ -0,0 +1,4 @@
++import os
++import anthropic
++ANTHROPIC_API_KEY = "{key}"
++client = anthropic.Anthropic()
+diff --git a/README.md b/README.md
+index 2222222..3333333 100644
+--- a/README.md
++++ b/README.md
+@@ -1,2 +1,3 @@
+ # demo
+-旧的一行
++新的一行，说明如何配置环境变量

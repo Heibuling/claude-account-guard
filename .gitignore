@@ -1,0 +1,39 @@
+# ---- 报告产物（可能包含本机路径与主机名，分享前先脱敏）----
+report.md
+report.json
+report.redacted.md
+guard-report/
+.ci-report/
+
+# ---- 密钥与环境变量 ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
+credentials/
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+build/
+dist/
+
+# ---- 测试临时目录（受限环境下会退回到 tests/ 旁边）----
+.tmp-tests-*/
+
+# ---- 编辑器与系统 ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~

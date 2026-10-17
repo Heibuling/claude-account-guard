@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: py${{ matrix.python }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.9", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install dev tools
+        run: python -m pip install --upgrade pip pytest ruff
+
+      - name: Lint with ruff
+        run: ruff check --line-length 120 scripts tests
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Self-audit smoke test (never fails the build)
+        run: python scripts/audit.py --path . --report-dir .ci-report --quiet
+
+      - name: Scan git history for leaked credentials
+        run: python scripts/check_history.py --path . --fail-on high
+
+      - name: Ensure the three scripts stay network-free
+        shell: bash
+        run: |
+          if grep -rnE "import (requests|socket|http\.client|urllib\.request)|from (requests|urllib\.request) import" scripts/; then
+            echo "::error::scripts/ must not import network libraries"
+            exit 1
+          fi
