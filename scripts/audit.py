@@ -42,7 +42,7 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 import check_history  # noqa: E402
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 
 DISCLAIMER = (
     "本报告是启发式自查工具的结果，不是平台风控结论，也不能保证账号不被限制或封禁。"

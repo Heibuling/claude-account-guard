@@ -11,6 +11,24 @@
 - `check_history.py`：支持 `--staged` 模式，在提交前扫描暂存区。
 - `redact.py`：增加组织名与合同号的脱敏规则。
 
+## 0.3.0 — 2026-10-17
+
+### Added
+
+- **`scripts/evidence_pack.py`**：把 `references/incident-response.md` 的证据清单变成可执行流程。
+  - `--init`：建 8 个编号目录（身份 / 支付 / 网络 / 使用 / 止损 / 第三方 / 时间线 / 申诉草稿）+ `timeline.csv` + 说明文件；
+  - `--add`：按编号归档文件（支持 `02` 这类简写）；
+  - `--list`：查看每个目录有几份材料、哪些必需项还缺；
+  - `--build`：文本类材料自动脱敏（复用 `redact.py`）、二进制原样复制并逐条警告、生成 `MANIFEST.md` / `manifest.json`（每个文件带 SHA-256）/ `timeline.md`，最后打包 zip；
+  - `--strict`：有缺失项或警告时返回非零，可放进发布前检查。
+- 测试：材料包的初始化、脱敏、缺失项、二进制警告、重建不累积 zip、`--add/--list` 与 CLI 参数（38 → 41 项）。
+
+### Changed
+
+- `README.md` / `README.en.md` / `SKILL.md` / `references/incident-response.md` 增加材料包用法与边界说明。
+- 四个脚本 `VERSION` → `0.3.0`。
+- `.gitignore` 增加 `.evidence-pack/`：材料包含个人信息，禁止提交。
+
 ## 0.2.0 — 2026-10-17
 
 ### Added

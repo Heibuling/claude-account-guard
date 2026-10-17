@@ -69,6 +69,10 @@ python scripts/check_history.py --path .
 
 # 分享报告/日志前脱敏
 python scripts/redact.py -i report.md -o report.redacted.md
+
+# 已出事：生成申诉材料包（8 个编号目录 → 脱敏 → 清单 → zip）
+python scripts/evidence_pack.py --init --dir ./evidence-pack
+python scripts/evidence_pack.py --build --dir ./evidence-pack
 ```
 
 读结果：`critical` 先处理（通常是密钥暴露），`high` 本周（通常是非官方 base_url），`medium/info` 排期。
@@ -79,6 +83,7 @@ python scripts/redact.py -i report.md -o report.redacted.md
 - 有 `critical`：**先吊销，再清理，最后写复盘**（顺序不能反）。
 - 分数 ≥ 46：按 `incident-response.md` 的 0–24h 清单走，别先写申诉。
 - 已被封：`incident-response.md` 证据清单 + `appeal-templates.md` 对应模板（疑似误封 / 共享账号 / 支付问题）。
+  需要整理材料时直接跑 `scripts/evidence_pack.py --init`，把 8 个编号目录填完后 `--build` 出脱敏 zip 与清单。
 - 永远先问一句："你自己判断，这次是否用了中转、共享账号或代付？"——答案决定用哪套模板。
 
 ---
@@ -191,8 +196,9 @@ python scripts/redact.py -i report.md -o report.redacted.md
 | `scripts/audit.py` | 只读体检：密钥、base_url、多账号、历史、时区 | 否 |
 | `scripts/check_history.py` | 扫描 git 历史中的密钥痕迹（只输出脱敏结果） | 否 |
 | `scripts/redact.py` | 分享前脱敏：Key/Cookie/邮箱/手机号/公网 IP/用户名路径 | 否 |
+| `scripts/evidence_pack.py` | 申诉材料包：8 个编号目录 → 文本脱敏 → SHA-256 清单 → zip | 否 |
 | `assets/scorecard-template.md` | 可打印的 25 项自查表 | 否 |
 
-三个脚本都是纯 Python 标准库，无网络请求、无遥测、无第三方依赖，Windows/macOS/Linux 通用。**本脚本不会上传任何数据。**
+四个脚本都是纯 Python 标准库，无网络请求、无遥测、无第三方依赖，Windows/macOS/Linux 通用。**本脚本不会上传任何数据。**
 
 平台条款会变：`references/*.md` 顶部有 `last-reviewed`，以官方文档为准（Consumer Terms / Commercial Terms / Usage Policy / Supported Countries）。

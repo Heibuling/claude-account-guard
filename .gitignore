@@ -4,6 +4,8 @@ report.json
 report.redacted.md
 guard-report/
 .account-guard/
+.evidence-pack/
+evidence-pack/
 .ci-report/
 
 # ---- 密钥与环境变量 ----

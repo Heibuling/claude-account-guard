@@ -44,7 +44,7 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 import check_history  # noqa: E402
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 
 PLACEHOLDER_BY_KIND = {
     "anthropic_api_key": "<ANTHROPIC_API_KEY>",

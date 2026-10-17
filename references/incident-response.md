@@ -62,9 +62,17 @@ related: appeal-templates.md, risk-scorecard.md, third-party-risk.md
 
 **整理规则**：
 
+- 用脚本把材料装进统一结构，别手工堆在下载文件夹里：
+  ```bash
+  python scripts/evidence_pack.py --init --dir ./evidence-pack      # 建 8 个编号目录 + 时间线模板
+  python scripts/evidence_pack.py --add 02-payment ~/Downloads/statement-2026-09.pdf --dir ./evidence-pack
+  python scripts/evidence_pack.py --build --dir ./evidence-pack     # 文本脱敏 + SHA-256 清单 + zip
+  ```
+  产物在 `evidence-pack/dist/`：`MANIFEST.md`（清单 + 发送前自查项）、`manifest.json`、`timeline.md`。
+  **PDF/图片不会被自动脱敏**，清单里会逐条标出来，必须人工检查。
 - 一个 PDF 一个主题，文件名写清楚：`01-payment-statement-2026-09.pdf`。
 - 截图必须包含时间戳与可核验的上下文（URL、账号标识可打码）。
-- 所有材料先跑一遍脱敏：
+- 单独一份文本要脱敏时也可以直接跑：
   ```bash
   python scripts/redact.py -i statement.txt -o statement.redacted.txt --check
   ```

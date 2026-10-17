@@ -31,6 +31,7 @@ if str(SCRIPTS) not in sys.path:
 
 import audit  # noqa: E402
 import check_history  # noqa: E402
+import evidence_pack  # noqa: E402
 import redact  # noqa: E402
 
 ALPHABET = string.ascii_letters + string.digits
@@ -74,6 +75,13 @@ def write(path: Path, text: str) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
     return path
+
+
+def run_quiet(func, *args, **kwargs):
+    """跑会 print 的函数但不污染测试输出。"""
+    buffer = StringIO()
+    with redirect_stdout(buffer):
+        return func(*args, **kwargs)
 
 
 def audit_dir(root: Path, declared_region: str = ""):
@@ -522,3 +530,60 @@ def test_audit_skips_report_directory():
 
         rescanned = audit.run_audit(root, include_history=False)
         assert "AG-012" in ids(rescanned), "不排除时应当命中（证明上面不是因为没扫到）"
+
+
+# ---------------------------------------------------------------------------
+# 7. evidence_pack.py（申诉材料包）
+# ---------------------------------------------------------------------------
+def test_evidence_pack_init_and_build():
+    key = fake_key(seed=31)
+    with temp_workspace() as root:
+        pack = root / "pack"
+        assert run_quiet(evidence_pack.init_pack, pack) == 0
+        assert (pack / "07-timeline").is_dir()
+        assert (pack / "timeline.csv").is_file()
+        assert (pack / "02-payment" / "PUT-FILES-HERE.md").is_file()
+
+        write(
+            pack / "02-payment" / "statement.txt",
+            "mail eric@example.com\nKEY={}\n".format(key),
+        )
+        write(pack / "04-usage" / "screen.png", "binary\u0000payload")
+
+        assert run_quiet(evidence_pack.build_pack, pack) == 0
+        dist = pack / "dist"
+        assert (dist / "MANIFEST.md").is_file()
+        manifest = json.loads((dist / "manifest.json").read_text(encoding="utf-8"))
+        assert any(entry["redacted"] for entry in manifest["entries"])
+        assert any("未自动脱敏" in item for item in manifest["warnings"])
+        assert "01-identity" in manifest["missing_required"]
+
+        cleaned = (dist / "02-payment" / "01-statement.txt").read_text(encoding="utf-8")
+        assert key_body(key)[:20] not in cleaned, "文本材料必须被脱敏"
+        assert "<EMAIL>" in cleaned
+        assert (dist / "07-timeline" / "timeline.md").is_file()
+        assert len(list(dist.glob("*.zip"))) == 1
+
+
+def test_evidence_pack_rebuild_does_not_accumulate_zips():
+    with temp_workspace() as root:
+        pack = root / "pack"
+        run_quiet(evidence_pack.init_pack, pack)
+        write(pack / "01-identity" / "id.txt", "hello")
+        assert run_quiet(evidence_pack.build_pack, pack) == 0
+        assert len(list((pack / "dist").glob("*.zip"))) == 1
+        assert run_quiet(evidence_pack.build_pack, pack) == 0
+        assert len(list((pack / "dist").glob("*.zip"))) == 1, "重建时 dist 会清空，不应累积旧包"
+
+
+def test_evidence_pack_add_and_list():
+    with temp_workspace() as root:
+        pack = root / "pack"
+        run_quiet(evidence_pack.init_pack, pack)
+        source = write(root / "statement.pdf", "fake pdf bytes")
+        assert run_quiet(evidence_pack.add_file, pack, "02", str(source)) == 0
+        assert (pack / "02-payment" / "01-statement.pdf").is_file()
+        assert run_quiet(evidence_pack.add_file, pack, "99-unknown", str(source)) == 2
+        assert run_quiet(evidence_pack.list_pack, pack) == 0
+        assert run_quiet(evidence_pack.main, ["--list", "--dir", str(pack)]) == 0
+        assert run_quiet(evidence_pack.main, []) == 2

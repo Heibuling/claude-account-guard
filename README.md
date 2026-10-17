@@ -37,7 +37,7 @@
 3. **Key 泄露** —— 提交到公开仓库、写进前端 bundle、打日志、截图发群，几分钟内就会被自动化工具采集并滥用。
 4. **支付与网络矛盾** —— 卡 BIN 国家、账单地址、接入 IP、注册姓名彼此不一致，申诉时无法自证。
 
-这四件事的共同点：**它们都可以在事前自查，也都可以用零成本的配置改动消除。** 本项目把它们整理成六层模型、25 项评分卡和三个只读脚本。
+这四件事的共同点：**它们都可以在事前自查，也都可以用零成本的配置改动消除。** 本项目把它们整理成六层模型、25 项评分卡和四个只读脚本。
 
 ## 六层风险模型
 
@@ -137,6 +137,31 @@ jobs:
 
 输出：`steps.guard.outputs.critical` / `.high` / `.report-md` / `.report-json`。
 
+## 出事了：生成申诉材料包
+
+账号被限制后，证据最容易散落在下载文件夹、聊天记录和邮箱里；直接发原图还可能把 Key 和卡号一起送出去。
+`evidence_pack.py` 把 `references/incident-response.md` 的清单变成一个目录骨架：
+
+```bash
+# 1) 建骨架（8 个编号目录 + 时间线模板 + 说明）
+python scripts/evidence_pack.py --init --dir ./evidence-pack
+
+# 2) 按编号把文件放进去，或用 --add 归档
+python scripts/evidence_pack.py --add 02-payment ~/Downloads/statement-2026-09.pdf --dir ./evidence-pack
+
+# 3) 看一眼还缺什么
+python scripts/evidence_pack.py --list --dir ./evidence-pack
+
+# 4) 脱敏文本、算哈希、出清单、打包
+python scripts/evidence_pack.py --build --dir ./evidence-pack
+```
+
+产物：`evidence-pack/dist/` 下的 `MANIFEST.md`（人读清单 + 自查项）、`manifest.json`（机器读，含每个文件的 SHA-256）、
+`timeline.md`（由 `timeline.csv` 生成），以及一个 zip。
+
+**边界**：文本类材料（txt/log/md/json/eml…）会自动脱敏；**PDF 和图片不会**——标准库做不到内容级脱敏，
+它们会被原样复制并在清单里标成"需要人工检查"。这个目录含个人信息，**不要提交到仓库**。
+
 ## 评分卡示例
 
 ```console
@@ -180,7 +205,7 @@ claude-account-guard/
 ├── pyproject.toml                # ruff / pytest 配置（显式固定规则集）
 ├── .github/workflows/ci.yml      # pytest + ruff，三平台
 ├── references/                   # 知识库（按需加载）
-├── scripts/                      # 三个只读脚本（纯标准库）
+├── scripts/                      # 四个只读脚本（纯标准库）
 ├── assets/scorecard-template.md  # 可打印自查表
 └── tests/                        # pytest + fixtures
 ```
@@ -212,15 +237,16 @@ claude-account-guard/
 | `scripts/audit.py` | 只读体检：环境变量/`.env`、疑似密钥、非官方 `base_url`、多账号痕迹、git 历史、时区一致性；支持 `--scorecard` 评分 | 不打印密钥原文；不修改被扫描文件；只写 `report.md`/`report.json` |
 | `scripts/check_history.py` | 扫描 `git log -p` 的新增行与提交信息，找出历史里的密钥痕迹 | 命中结果一律脱敏输出；无 git 时优雅降级 |
 | `scripts/redact.py` | 分享前脱敏：Key / Bearer / JWT / 私钥块 / Cookie / URL token / 邮箱 / 手机号 / 公网 IP / 用户名路径 | 幂等；`--check` 可用于 CI 门禁 |
+| `scripts/evidence_pack.py` | 申诉材料包：`--init` 建 8 个编号目录，`--add` 归档，`--build` 脱敏文本 + 算 SHA-256 + 出清单 + 打包 zip | 二进制文件不会被自动脱敏，清单里会逐条标出要求人工检查 |
 
-三个脚本都是**纯 Python 标准库**，无第三方依赖、无网络请求、无遥测，Windows / macOS / Linux 可运行，Python 3.9+。
+四个脚本都是**纯 Python 标准库**，无第三方依赖、无网络请求、无遥测，Windows / macOS / Linux 可运行，Python 3.9+。
 
 ### 安全性
 
 - **不联网**：脚本里没有任何 HTTP 客户端调用，`audit.py` 只在本地读文件与调用 `git`（只读子命令 `rev-list` / `log`）。
 - **不上传**：没有埋点、没有遥测、没有"匿名统计"。
 - **不打印密钥**：任何命中都会被替换成 `<redacted:类型:len=N>`，只保留类型与长度。
-- **可审计**：三个脚本合计约 2.1k 行（含注释与文档字符串），`grep -rnE "import (requests|urllib\.request|socket|http\.client)" scripts/` 无任何输出。
+- **可审计**：四个脚本合计约 2.6k 行（含注释与文档字符串），`grep -rnE "import (requests|urllib\.request|socket|http\.client)" scripts/` 无任何输出。
 - **本脚本不会上传任何数据。**
 
 ## 五步工作流
@@ -261,7 +287,7 @@ claude-account-guard/
 欢迎贡献，尤其是：条款变更、官方文档链接失效、申诉模板措辞改进、跨平台兼容性问题。
 
 ```bash
-python -m pytest -q          # 38 项测试
+python -m pytest -q          # 41 项测试
 ruff check .                 # 规则集在 pyproject.toml 里固定
 python scripts/audit.py --path . --no-history   # 自检
 ```

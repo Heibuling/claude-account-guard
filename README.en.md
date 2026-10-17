@@ -53,7 +53,7 @@ mysterious platform behaviour:
    within minutes.
 
 All three are *configuration* problems, and all three are removable with zero-cost changes.
-This repository turns that into a repeatable review: a knowledge base, a scorecard, three
+This repository turns that into a repeatable review: a knowledge base, a scorecard, four
 read-only scripts, and a 72-hour incident playbook.
 
 ## Who it is for
@@ -172,6 +172,26 @@ jobs:
 Outputs: `steps.guard.outputs.critical` / `.high` / `.report-md` / `.report-json`. The report
 directory is excluded from the scan, so re-running on the same workspace is clean.
 
+## When access is already restricted
+
+Evidence normally ends up spread across downloads, chat history and email — and forwarding raw
+screenshots is exactly how keys and card numbers leak. `evidence_pack.py` turns the checklist in
+`references/incident-response.md` into a directory skeleton:
+
+```bash
+python scripts/evidence_pack.py --init --dir ./evidence-pack
+python scripts/evidence_pack.py --add 02-payment ~/Downloads/statement.pdf --dir ./evidence-pack
+python scripts/evidence_pack.py --list --dir ./evidence-pack
+python scripts/evidence_pack.py --build --dir ./evidence-pack
+```
+
+You get `dist/MANIFEST.md` (human checklist), `dist/manifest.json` (SHA-256 per file),
+`dist/07-timeline/timeline.md` (generated from `timeline.csv`) and a zip.
+
+**Boundary:** text files are redacted automatically; **PDFs and images are not** — the standard
+library cannot redact image content, so they are copied as-is and explicitly flagged for manual
+review. The pack contains personal data: never commit it.
+
 ## Risk scorecard
 
 Six weighted dimensions, 25 binary items, `1` = risk present, `0` = eliminated,
@@ -226,9 +246,9 @@ claude-account-guard/
 ├── LICENSE  CHANGELOG.md  .gitignore  pyproject.toml
 ├── .github/workflows/ci.yml      # pytest + ruff on 3 OS × 2 Python versions
 ├── references/                   # knowledge base, loaded on demand (Chinese)
-├── scripts/                      # three read-only, stdlib-only scripts
+├── scripts/                      # four read-only, stdlib-only scripts
 ├── assets/scorecard-template.md  # printable 25-item checklist
-└── tests/                        # 38 tests + fixtures
+└── tests/                        # 41 tests + fixtures
 ```
 
 ### Knowledge base
@@ -261,8 +281,9 @@ Official sources of truth:
 | `scripts/audit.py` | Env/`.env` key presence, secret patterns, non-official `base_url`, multi-account traces, git history, locale consistency; `--scorecard` scoring | Never prints a key value; never modifies scanned files; writes only `report.md` / `report.json` |
 | `scripts/check_history.py` | Scans added lines and commit messages in `git log -p` for credential patterns | Output is always masked; degrades gracefully when git is absent |
 | `scripts/redact.py` | Masks keys, Bearer tokens, JWTs, private-key blocks, cookies, URL tokens, emails, phones, public IPs, home paths | Idempotent; `--check` usable as a CI gate |
+| `scripts/evidence_pack.py` | Appeal evidence pack: `--init` scaffolds 8 numbered folders, `--add` files them, `--build` redacts text, hashes, writes a manifest and zips | Binary files are never auto-redacted; each one is flagged for manual review |
 
-All three are **pure standard library**, Python 3.9+, no third-party dependencies, and run
+All four are **pure standard library**, Python 3.9+, no third-party dependencies, and run
 on Windows / macOS / Linux.
 
 ## Security model
@@ -273,7 +294,7 @@ on Windows / macOS / Linux.
 - **No telemetry.** No analytics, no "anonymous usage statistics", no update check.
 - **No key disclosure.** Matches are replaced with `<redacted:kind:len=N>` — type and length
   only. Tests assert that reports never contain the original value.
-- **Auditable.** ~2.1k lines including docstrings, three files, no build step.
+- **Auditable.** ~2.6k lines including docstrings, four files, no build step.
 
 ## Compliance red lines
 
@@ -335,7 +356,7 @@ Especially welcome: terms-of-service changes, dead official links, appeal wordin
 cross-platform issues.
 
 ```bash
-python -m pytest -q          # 38 tests
+python -m pytest -q          # 41 tests
 ruff check .                 # rule set pinned in pyproject.toml
 python scripts/audit.py --path . --no-history
 ```
