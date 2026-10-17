@@ -11,6 +11,25 @@
 - `check_history.py`：支持 `--staged` 模式，在提交前扫描暂存区。
 - `redact.py`：增加组织名与合同号的脱敏规则。
 
+## 0.1.1 — 2026-10-17
+
+只修 CI 与 Windows 控制台编码，Skill 内容与 0.1.0 一致。
+
+### Fixed
+
+- CI（ruff）：ruff 0.17 扩大了默认规则集（`EXE001` / `UP009` / `UP035`），未改动的代码也开始报错。现在在 `pyproject.toml` 中显式固定 `select = ["E4", "E7", "E9", "F"]`，让 lint 结果不再随 ruff 版本漂移。
+- CI（Windows）：`scripts/check_history.py` 在 cp1252 控制台打印中文时抛 `UnicodeEncodeError`，导致两个 windows job 失败。已补齐 stdout/stderr 的 UTF-8 重配置，并在 workflow 中设置 `PYTHONIOENCODING=utf-8`。
+
+### Added
+
+- `pyproject.toml`：ruff 规则集、line-length、pytest `testpaths`。
+- 回归测试：用 cp1252 的 stdout 运行 `check_history.py`（测试数 36 → 37）。
+
+### Changed
+
+- 三个脚本在 git 中标记为可执行，与其 shebang 一致。
+- CI 的 lint 步骤改为 `ruff check .`（规则由配置决定）。
+
 ## 0.1.0 — 2026-10-17
 
 首个公开版本。
